@@ -2,6 +2,13 @@ from __future__ import annotations
 from typing import List
 from pathlib import Path
 from argparse import ArgumentParser
+import os
+
+VOLUMES: str = "/Volumes/"
+
+
+def empty_dir(dir: Path) -> bool:
+    return list(dir.iterdir()) == []
 
 
 def _init_argparser() -> ArgumentParser:
@@ -13,11 +20,19 @@ def _init_argparser() -> ArgumentParser:
     return parser
 
 
-def get_all_Volumes_from_name(volumename: str) -> List[Path]:
-    return []
+def get_all_empty_Volumes_from_name(volumename: str) -> List[Path]:
+    """Returns all empty sub directories"""
+    if os.name == "posix":
+        all_volumes: Path = Path(VOLUMES)
+    else:
+        return []
+
+    filterd_volumes = filter(
+        lambda x: x.name.startswith(volumename) and x.is_dir() and empty_dir(x), all_volumes.iterdir())
+    return list(filterd_volumes)
 
 
-def write_file_to_Volume(volume: Path) -> None:
+def copy_files_to_Volumes(file: Path, volumes: List[Path]) -> None:
     pass
 
 
@@ -29,7 +44,7 @@ def main(*argv: str) -> int:
         print("lagerfilm_dir muss ein Ordner sein")
         return 1
     target_dir = input("Wie heissen die zu überschreibenden USB-Sticks?: ")
-    usb_volumes = get_all_Volumes_from_name(target_dir)
+    usb_volumes = get_all_empty_Volumes_from_name(target_dir)
     print(usb_volumes)
     return 0
 
