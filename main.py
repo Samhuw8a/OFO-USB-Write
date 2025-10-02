@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import List
 from pathlib import Path
 from argparse import ArgumentParser
-from progress.bar import Bar
+import concurrent.futures
 import os
 import shutil
 
@@ -36,9 +36,22 @@ def get_all_empty_Volumes_from_name(volumename: str) -> List[Path]:
     return list(filterd_volumes)
 
 
+def copy_file_to(src: Path, dst: Path) -> str:
+    shutil.copytree(src, dst, dirs_exist_ok=True)
+    return f"{dst.name}: OK"
+
+
 def copy_files_to_Volumes(target_directory: Path, volumes: List[Path]) -> None:
-    for vol in Bar("Kopiere Lagerfilm").iter(volumes):
-        shutil.copytree(src=target_directory, dst=vol, dirs_exist_ok=True)
+    with concurrent.futures.ProcessPoolExecutor() as executor:
+        processes = []
+        for vol in volumes:
+            processes.append(executor.submit(
+                copy_file_to, target_directory, vol))
+
+        for p in concurrent.futures.as_completed(processes):
+            print(p.result())
+
+    print("Fertig mit Kopieren")
 
 
 def main(*argv: str) -> int:
@@ -56,6 +69,8 @@ def main(*argv: str) -> int:
 
     if input("[Y/n]: ").lower() == "n":
         return 1
+    print("!!!WICHTIG!!!, Hol dir ein Bier!")
+    print("Starte das Kopieren der Daten:")
     copy_files_to_Volumes(args.lagerfilm_dir, usb_volumes)
     return 0
 
