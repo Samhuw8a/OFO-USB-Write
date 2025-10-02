@@ -2,9 +2,12 @@ from __future__ import annotations
 from typing import List
 from pathlib import Path
 from argparse import ArgumentParser
+from progress.bar import Bar
 import os
+import shutil
 
-VOLUMES: str = "/Volumes/"
+
+VOLUMES: str = "./test/volumes/"
 
 
 def empty_dir(dir: Path) -> bool:
@@ -25,6 +28,7 @@ def get_all_empty_Volumes_from_name(volumename: str) -> List[Path]:
     if os.name == "posix":
         all_volumes: Path = Path(VOLUMES)
     else:
+        # TODO Windows
         return []
 
     filterd_volumes = filter(
@@ -32,8 +36,9 @@ def get_all_empty_Volumes_from_name(volumename: str) -> List[Path]:
     return list(filterd_volumes)
 
 
-def copy_files_to_Volumes(file: Path, volumes: List[Path]) -> None:
-    pass
+def copy_files_to_Volumes(target_directory: Path, volumes: List[Path]) -> None:
+    for vol in Bar("Kopiere Lagerfilm").iter(volumes):
+        shutil.copytree(src=target_directory, dst=vol, dirs_exist_ok=True)
 
 
 def main(*argv: str) -> int:
@@ -45,9 +50,15 @@ def main(*argv: str) -> int:
         return 1
     target_dir = input("Wie heissen die zu überschreibenden USB-Sticks?: ")
     usb_volumes = get_all_empty_Volumes_from_name(target_dir)
-    print(usb_volumes)
+    print(f"Kopiere alle Dateien in \n{args.lagerfilm_dir}\" nach:")
+    for i in usb_volumes:
+        print(i.name)
+
+    if input("[Y/n]: ").lower() == "n":
+        return 1
+    copy_files_to_Volumes(args.lagerfilm_dir, usb_volumes)
     return 0
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    raise SystemExit(main("./test/lagerfilm/"))
