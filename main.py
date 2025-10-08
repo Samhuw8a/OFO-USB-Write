@@ -64,15 +64,18 @@ def main(*argv: str) -> int:
     if os.name == "posix":
         target_dir = input("Wie heissen die zu überschreibenden USB-Sticks?: ")
         usb_volumes = get_all_empty_Volumes_from_name(target_dir)
+
+        print(f"Kopiere alle Dateien in \n{args.lagerfilm_dir}\" nach:")
+        for i in usb_volumes:
+            print(i.name)
     elif os.name == "nt":
         usb_volumes = windows_get_all_removable_devices()
-        print(usb_volumes)
+
+        print(f"Kopiere alle Dateien in \n{args.lagerfilm_dir}\" nach:")
+        for i in usb_volumes:
+            print(i.drive)
     else:
         raise EnvironmentError("OS not compatible")
-
-    print(f"Kopiere alle Dateien in \n{args.lagerfilm_dir}\" nach:")
-    for i in usb_volumes:
-        print(i.name)
 
     if input("[Y/n]: ").lower() == "n":
         return 1
