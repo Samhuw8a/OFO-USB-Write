@@ -24,8 +24,9 @@ def get_all_empty_Volumes_from_name(volumename: str) -> List[Path]:
     """Returns all empty sub directories"""
     if os.name == "posix":
         all_volumes: Path = Path(VOLUMES)
-    else:
-        return []
+    elif os.name == "nt":
+        all_volumes: Path = os.listdrives()
+        return list(map(Path, all_volumes))
 
     filterd_volumes = filter(
         lambda x: x.name.startswith(volumename) and x.is_dir() and empty_dir(x), all_volumes.iterdir())
