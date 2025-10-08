@@ -66,6 +66,7 @@ def main(*argv: str) -> int:
         usb_volumes = get_all_empty_Volumes_from_name(target_dir)
     elif os.name == "nt":
         usb_volumes = windows_get_all_removable_devices()
+        print(usb_volumes)
     else:
         raise EnvironmentError("OS not compatible")
 
