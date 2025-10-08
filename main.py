@@ -5,6 +5,7 @@ from argparse import ArgumentParser
 import concurrent.futures
 import os
 import shutil
+import psutil
 
 
 VOLUMES: str = "./test/volumes/"
@@ -23,20 +24,13 @@ def _init_argparser() -> ArgumentParser:
     return parser
 
 
+def windows_get_all_removable_devices() -> List[Path]:
+    return list(map(lambda x: Path(x.mountpoint), filter(lambda x: "removable" in x.opts, psutil.disk_partitions())))
+
+
 def get_all_empty_Volumes_from_name(volumename: str) -> List[Path]:
     """Returns all empty sub directories"""
-    if os.name == "posix":
-        all_volumes: Path = Path(VOLUMES)
-<<<<<<< HEAD
-    else:
-        # TODO Windows
-        return []
-=======
-    elif os.name == "nt":
-        all_volumes: Path = os.listdrives()
-        return list(map(Path, all_volumes))
->>>>>>> f9085b24b25240276923ab06cd9100b6f0f80e4c
-
+    all_volumes: Path = Path(VOLUMES)
     filterd_volumes = filter(
         lambda x: x.name.startswith(volumename) and x.is_dir() and empty_dir(x), all_volumes.iterdir())
     return list(filterd_volumes)
@@ -67,8 +61,14 @@ def main(*argv: str) -> int:
     if not args.lagerfilm_dir.is_dir():
         print("lagerfilm_dir muss ein Ordner sein")
         return 1
-    target_dir = input("Wie heissen die zu überschreibenden USB-Sticks?: ")
-    usb_volumes = get_all_empty_Volumes_from_name(target_dir)
+    if os.name == "posix":
+        target_dir = input("Wie heissen die zu überschreibenden USB-Sticks?: ")
+        usb_volumes = get_all_empty_Volumes_from_name(target_dir)
+    elif os.name == "nt":
+        usb_volumes = windows_get_all_removable_devices()
+    else:
+        raise EnvironmentError("OS not compatible")
+
     print(f"Kopiere alle Dateien in \n{args.lagerfilm_dir}\" nach:")
     for i in usb_volumes:
         print(i.name)
