@@ -98,6 +98,7 @@ def main(*argv: str) -> int:
     print("!!!WICHTIG!!!, Hol dir ein Bier!")
     print("Starte das Kopieren der Daten:")
     copy_files_to_Volumes(args.lagerfilm_dir, usb_volumes)
+
     return 0
 
 
