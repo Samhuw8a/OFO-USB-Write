@@ -8,7 +8,7 @@ import shutil
 import psutil
 
 
-VOLUMES: str = "./test/volumes/"
+VOLUMES: str = "/Volumes/"
 
 
 def clear() -> None:
@@ -39,7 +39,7 @@ def get_all_empty_Volumes_from_name(volumename: str) -> List[Path]:
     """Returns all empty sub directories"""
     all_volumes: Path = Path(VOLUMES)
     filterd_volumes = filter(
-        lambda x: x.name.startswith(volumename) and x.is_dir() and empty_dir(x), all_volumes.iterdir())
+        lambda x: x.name.startswith(volumename) and x.is_dir(), all_volumes.iterdir())
     return list(filterd_volumes)
 
 
@@ -102,4 +102,4 @@ def main(*argv: str) -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main("./test/lagerfilm/"))
+    raise SystemExit(main())
