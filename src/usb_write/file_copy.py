@@ -1,4 +1,5 @@
 from __future__ import annotations
+from tqdm import tqdm
 from pathlib import Path
 from psutil import disk_partitions
 from typing import Optional, List
@@ -7,7 +8,9 @@ import concurrent.futures
 import shutil
 
 
-def get_usb_drives(os_name: str, volumename: Optional[str] = None) -> list[Path]:
+def get_usb_drives(
+    os_name: str, volumename: Optional[str] = None, volumes_dir: str = "/Volumes/"
+) -> list[Path]:
     match os_name:
         case "posix":
             logger.debug("Getting USB drives for posix system")
@@ -15,7 +18,7 @@ def get_usb_drives(os_name: str, volumename: Optional[str] = None) -> list[Path]
                 raise ValueError("volumename must be provided for posix systems")
 
             logger.debug(f"Looking for volumes starting with '{volumename}'")
-            all_volumes: Path = Path("/Volumes/")
+            all_volumes: Path = Path(volumes_dir)
             filterd_volumes = filter(
                 lambda x: x.name.startswith(volumename) and x.is_dir(),
                 all_volumes.iterdir(),
@@ -42,19 +45,19 @@ def get_usb_drives(os_name: str, volumename: Optional[str] = None) -> list[Path]
 
 
 def copy_func(src: Path, dst: Path) -> str:
-    # TODO: custom copy function with progress bar
     shutil.copytree(src, dst, dirs_exist_ok=True)
     return f"{dst.name}: OK"
 
 
 def copy_files_to_volumes(from_dir: Path, to_dir: List[Path]) -> None:
-    with concurrent.futures.ProcessPoolExecutor() as executor:
+    with concurrent.futures.ThreadPoolExecutor() as executor:
         processes = []
         for vol in to_dir:
             logger.debug(f"Scheduling copy to {vol}")
             processes.append(executor.submit(copy_func, from_dir, vol))
 
-        for p in concurrent.futures.as_completed(processes):
-            print(p.result())
+        with tqdm(total=len(processes), desc="Kopieren") as pbar:
+            for p in concurrent.futures.as_completed(processes):
+                pbar.update(1)
 
     print("Fertig mit Kopieren")

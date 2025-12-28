@@ -3,7 +3,6 @@ from typing import List, Optional
 from pathlib import Path
 from argparse import ArgumentParser, Namespace
 from usb_write._logging import logger, debug_conf, no_conf
-
 from usb_write.file_copy import get_usb_drives, copy_files_to_volumes
 import os
 
@@ -18,13 +17,15 @@ def clear() -> None:
 def _init_argparser() -> ArgumentParser:
     parser: ArgumentParser = ArgumentParser(
         prog="OFO-USB",
-        description="Ein Programm, dass den Inhalt eines Ordner auf viele USB-Sticks kopiert."
+        description="Ein Programm, dass den Inhalt eines Ordner auf viele USB-Sticks kopiert.",
     )
     parser.add_argument("lagerfilm_dir", type=Path)
-    parser.add_argument("-v", "--verbose", action="store_true",
-                        help="verbose Stdout output")
-    parser.add_argument("-d", "--debug", action="store_true",
-                        help="debug Stdout output")
+    parser.add_argument(
+        "-v", "--verbose", action="store_true", help="verbose Stdout output"
+    )
+    parser.add_argument(
+        "-d", "--debug", action="store_true", help="debug Stdout output"
+    )
     return parser
 
 
@@ -38,15 +39,14 @@ def run(args: Namespace) -> None:
 
     usb_volumes: List[Path] = get_usb_drives(os.name, target_dir)
 
-    print(f"Kopiere alle Dateien in \n{args.lagerfilm_dir}\" nach:")
+    print(f'Kopiere alle Dateien in \n{args.lagerfilm_dir}" nach:')
     for d in usb_volumes:
-        print(d.drive)
+        print(d.name)
 
     if input("[Y/n]: ").lower() == "n":
         raise KeyboardInterrupt("User aborted copy process")
 
-    print("!!!WICHTIG!!!, Hol dir ein Bier!")
-    print("Starte das Kopieren der Daten:")
+    logger.info("Starte das Kopieren der Daten")
     copy_files_to_volumes(args.lagerfilm_dir, usb_volumes)
 
 
@@ -54,9 +54,9 @@ def main(*argv: str) -> int:
     parser = _init_argparser()
     args = parser.parse_args(argv or None)
 
-    if args.d:
+    if args.debug:
         debug_conf()
-    elif not args.v:
+    elif not args.verbose:
         no_conf()
 
     logger.debug("Finished parsing command line arguments")

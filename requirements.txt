@@ -2,3 +2,4 @@ pathlib
 progress
 psutil
 tqdm
+rich
