@@ -41,6 +41,8 @@ def run(args: Namespace) -> None:
 
     print(f'Kopiere alle Dateien in \n{args.lagerfilm_dir}" nach:')
     for d in usb_volumes:
+        if os.name == "nt":
+            print(d.drive)
         print(d.name)
 
     if input("[Y/n]: ").lower() == "n":
@@ -65,7 +67,7 @@ def main(*argv: str) -> int:
         run(args)
     except Exception as e:
         logger.critical(f"Fehler beim Kopieren der Dateien: {e}")
-        logger.debug("Aborting program due to error", exc_info=True)
+        logger.debug("Aborting program due to error")
         return 1
 
     logger.info("Finished copying files to all USB drives")
