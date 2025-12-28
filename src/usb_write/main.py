@@ -1,14 +1,11 @@
 from __future__ import annotations
-from typing import List
+from typing import List, Optional
 from pathlib import Path
-from argparse import ArgumentParser
-import concurrent.futures
+from argparse import ArgumentParser, Namespace
+from usb_write._logging import logger, debug_conf, no_conf
+
+from usb_write.file_copy import get_usb_drives, copy_files_to_volumes
 import os
-import shutil
-import psutil
-
-
-VOLUMES: str = "/Volumes/"
 
 
 def clear() -> None:
@@ -18,87 +15,60 @@ def clear() -> None:
         os.system("cls")
 
 
-def empty_dir(dir: Path) -> bool:
-    return list(dir.iterdir()) == []
-
-
 def _init_argparser() -> ArgumentParser:
     parser: ArgumentParser = ArgumentParser(
         prog="OFO-USB",
         description="Ein Programm, dass den Inhalt eines Ordner auf viele USB-Sticks kopiert."
     )
     parser.add_argument("lagerfilm_dir", type=Path)
+    parser.add_argument("-v", "--verbose", action="store_true",
+                        help="verbose Stdout output")
+    parser.add_argument("-d", "--debug", action="store_true",
+                        help="debug Stdout output")
     return parser
 
 
-def windows_get_all_removable_devices() -> List[Path]:
-    return list(map(lambda x: Path(x.mountpoint), filter(lambda x: "removable" in x.opts, psutil.disk_partitions())))
+def run(args: Namespace) -> None:
+    if not args.lagerfilm_dir.is_dir():
+        raise NotADirectoryError(f"{args.lagerfilm_dir} is not a directory")
 
+    target_dir: Optional[str] = None
+    if os.name == "posix":
+        target_dir = input("Wie heissen die zu überschreibenden USB-Sticks?: ")
 
-def get_all_empty_Volumes_from_name(volumename: str) -> List[Path]:
-    """Returns all empty sub directories"""
-    all_volumes: Path = Path(VOLUMES)
-    filterd_volumes = filter(
-        lambda x: x.name.startswith(volumename) and x.is_dir(), all_volumes.iterdir())
-    return list(filterd_volumes)
+    usb_volumes: List[Path] = get_usb_drives(os.name, target_dir)
 
+    print(f"Kopiere alle Dateien in \n{args.lagerfilm_dir}\" nach:")
+    for d in usb_volumes:
+        print(d.drive)
 
-def copy_file_to(src: Path, dst: Path) -> str:
-    shutil.copytree(src, dst, dirs_exist_ok=True)
-    return f"{dst.name}: OK"
+    if input("[Y/n]: ").lower() == "n":
+        raise KeyboardInterrupt("User aborted copy process")
 
-
-def copy_files_to_Volumes(target_directory: Path, volumes: List[Path]) -> None:
-    with concurrent.futures.ProcessPoolExecutor() as executor:
-        processes = []
-        for vol in volumes:
-            processes.append(executor.submit(
-                copy_file_to, target_directory, vol))
-
-        for p in concurrent.futures.as_completed(processes):
-            print(p.result())
-
-    print("Fertig mit Kopieren")
+    print("!!!WICHTIG!!!, Hol dir ein Bier!")
+    print("Starte das Kopieren der Daten:")
+    copy_files_to_volumes(args.lagerfilm_dir, usb_volumes)
 
 
 def main(*argv: str) -> int:
     parser = _init_argparser()
     args = parser.parse_args(argv or None)
 
-    if not args.lagerfilm_dir.is_dir():
-        print("lagerfilm_dir muss ein Ordner sein")
-        return 1
-    clear()
-    if os.name == "posix":
-        target_dir = input("Wie heissen die zu überschreibenden USB-Sticks?: ")
-        usb_volumes = get_all_empty_Volumes_from_name(target_dir)
+    if args.d:
+        debug_conf()
+    elif not args.v:
+        no_conf()
 
-        if len(usb_volumes) == 0:
-            print("Es gibt keine USB-Sticks die den Kriterien entsprechen")
-            return 1
+    logger.debug("Finished parsing command line arguments")
 
-        print(f"Kopiere alle Dateien in \n{args.lagerfilm_dir}\" nach:")
-        for i in usb_volumes:
-            print(i.name)
-    elif os.name == "nt":
-        usb_volumes = windows_get_all_removable_devices()
-        if len(usb_volumes) == 0:
-            print("Es gibt keine USB-Sticks die den Kriterien entsprechen")
-            return 1
-
-        print(f"Kopiere alle Dateien in \n{args.lagerfilm_dir}\" nach:")
-        for i in usb_volumes:
-            print(i.drive)
-    else:
-        raise EnvironmentError("OS not compatible")
-
-    if input("[Y/n]: ").lower() == "n":
+    try:
+        run(args)
+    except Exception as e:
+        logger.critical(f"Fehler beim Kopieren der Dateien: {e}")
+        logger.debug("Aborting program due to error", exc_info=True)
         return 1
 
-    print("!!!WICHTIG!!!, Hol dir ein Bier!")
-    print("Starte das Kopieren der Daten:")
-    copy_files_to_Volumes(args.lagerfilm_dir, usb_volumes)
-
+    logger.info("Finished copying files to all USB drives")
     return 0
 
 
