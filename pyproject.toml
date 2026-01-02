@@ -1,0 +1,27 @@
+# Choosing a build backend:
+# https://packaging.python.org/en/latest/tutorials/packaging-projects/#choosing-a-build-backend
+[build-system]
+# A list of packages that are needed to build your package:
+requires = ["setuptools"] # REQUIRED if [build-system] table is used
+# The name of the Python object that frontends will use to perform the build:
+build-backend = "setuptools.build_meta" # If not defined, then legacy behavior can happen.
+
+
+[project]
+name = "OFO-USB-Write" # REQUIRED, is the only field that cannot be marked as dynamic.
+version = "0.1.0" # REQUIRED, although can be dynamic
+description = "Ein Programm, dass den Inhalt eines Ordner auf viele USB-Sticks kopiert."
+readme = "README.md"
+
+requires-python = ">=3.13"
+license = { file = "LICENSE" }
+
+authors = [{ name = "Samuel Huwiler", email = "samuel.huwiler@gmx.ch" }]
+
+dynamic = ["dependencies"]
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}
+optional-dependencies = {dev = { file = ["dev_requirements.txt"] }}
+
+[project.scripts]
+usb-write = "usb_write:__main__"
