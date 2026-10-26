@@ -24,7 +24,7 @@ logger = logging.getLogger("usb_write")
 
 def no_conf() -> None:
     logging_config["loggers"]["root"]["handlers"] = []
-    logging_config["loggers"]["root"]["level"] = "CRITICAL"
+    logging_config["loggers"]["root"]["level"] = "WARNING"
     logging.config.dictConfig(config=logging_config)
 
 
