@@ -26,6 +26,12 @@ def _init_argparser() -> ArgumentParser:
     parser.add_argument(
         "-d", "--debug", action="store_true", help="debug Stdout output"
     )
+    parser.add_argument(
+        "--dest",
+        type=Path,
+        default=Path("/Volumes/"),
+        help="folder where the volumes can be found",
+    )
     return parser
 
 
@@ -37,7 +43,7 @@ def run(args: Namespace) -> None:
     if os.name == "posix":
         target_dir = input("Wie heissen die zu überschreibenden USB-Sticks?: ")
 
-    usb_volumes: List[Path] = get_usb_drives(os.name, target_dir)
+    usb_volumes: List[Path] = get_usb_drives(os.name, target_dir, args.dest)
 
     print(f'Kopiere alle Dateien in \n{args.lagerfilm_dir}" nach:')
     for d in usb_volumes:
