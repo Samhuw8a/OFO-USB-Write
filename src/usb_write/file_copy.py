@@ -4,6 +4,7 @@ from pathlib import Path
 from psutil import disk_partitions
 from typing import Optional, List
 from usb_write._logging import logger
+from usb_write.sha_utils import get_hashes_for_directory, compare_hashes_for_directory
 import concurrent.futures
 import shutil
 
@@ -46,7 +47,7 @@ def get_usb_drives(
 
 def copy_func(src: Path, dst: Path) -> str:
     shutil.copytree(src, dst, dirs_exist_ok=True)
-    return f"{dst.name}: OK"
+    return f"{dst.name}: Finished copying"
 
 
 def copy_files_to_volumes(from_dir: Path, to_dir: List[Path]) -> None:
@@ -56,8 +57,18 @@ def copy_files_to_volumes(from_dir: Path, to_dir: List[Path]) -> None:
             logger.debug(f"Scheduling copy to {vol}")
             processes.append(executor.submit(copy_func, from_dir, vol))
 
-        with tqdm(total=len(processes), desc="Kopieren") as pbar:
+        with tqdm(total=len(processes), desc="USB's Finished") as pbar:
             for p in concurrent.futures.as_completed(processes):
                 pbar.update(1)
 
-    print("Fertig mit Kopieren")
+    logger.debug("Checking file hashes for all directories")
+    originals: List[str] = get_hashes_for_directory(from_dir)
+    for volume in to_dir:
+        logger.debug(f"Checking Hashes for directory {volume.absolute()}")
+        is_matching = compare_hashes_for_directory(originals, volume)
+        if is_matching:
+            logger.debug(f"Hash for {volume} OK")
+        else:
+            logger.warn(f"Incompatible Hashes for volume {volume}")
+
+    logger.debug("Finish Checking the hashes")
